@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CircuitScout US — DIY Electronics Price Comparison</title>
+<meta name="description" content="Compare prices for DIY electronics components, dev boards, sensors and modules across DigiKey, Mouser, Adafruit, SparkFun, Pololu, Jameco, Micro Center and Amazon.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563EB'/%3E%3Cpath d='M9 12h6v-4M23 12h-4M9 20h4v4M23 20h-6M16 12v8' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { colors: { primary: { DEFAULT: '#2563EB', dark: '#1D4ED8', soft: '#EFF4FF' } } } }
+  };
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  .drawer-open #bomPanel { transform: translateX(0); }
+  .drawer-open #bomOverlay { opacity: 1; pointer-events: auto; }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  .sugg-active { background-color: #EFF4FF; }
+  .thin-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+  .thin-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+<noscript><div class="p-4 bg-amber-50 text-amber-800 text-sm text-center">CircuitScout US needs JavaScript to run.</div></noscript>
+
+<!-- Header -->
+<header class="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+    <a href="#" id="homeLink" class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-lg bg-primary grid place-items-center shadow-sm">
+        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg>
+      </span>
+      <span class="leading-tight">
+        <span class="block font-semibold text-slate-900 tracking-tight">CircuitScout <span class="text-primary">US</span></span>
+        <span class="hidden sm:block text-[11px] text-slate-500">DIY electronics price index · 8 US stores</span>
+      </span>
+    </a>
+    <button id="bomOpen" data-action="bom-open" class="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:border-primary hover:text-primary transition">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      <span>Project BOM</span>
+      <span id="bomCount" class="min-w-[1.5rem] h-6 px-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold grid place-items-center tabular-nums">0</span>
+    </button>
+  </div>
+</header>
+
+<main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+  <!-- Search -->
+  <section class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6">
+    <h1 class="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">Find the best price on any maker part</h1>
+    <p class="text-sm text-slate-500 mt-1">Search a part name or number. We compare indexed offers from 8 US distributors and maker stores, landed cost included.</p>
+
+    <div class="relative mt-4" id="searchWrap">
+      <div class="relative">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 absolute left-3 top-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="text" maxlength="60" role="combobox" aria-expanded="false" aria-controls="sugg" aria-autocomplete="list" autocomplete="off" spellcheck="false"
+          placeholder='Try "ESP32", "Arduino Uno R4", "BME280", "STM32F411"…'
+          class="w-full h-12 pl-10 pr-32 rounded-lg border border-slate-300 bg-white text-base placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+        <button id="qClear" type="button" hidden aria-label="Clear search" class="absolute right-24 top-3 w-6 h-6 grid place-items-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <button id="qGo" type="button" class="absolute right-1.5 top-1.5 h-9 px-4 rounded-md bg-primary hover:bg-primary-dark text-white text-sm font-medium transition">Compare</button>
+      </div>
+      <ul id="sugg" role="listbox" class="hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-96 overflow-auto thin-scroll py-1"></ul>
+    </div>
+
+    <div id="pills" class="flex flex-wrap gap-2 mt-4" role="group" aria-label="Category filter"></div>
+
+    <div class="mt-3 text-xs text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+      <span>Quick tries:</span>
+      <button data-action="quick" data-q="STM32F411" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-primary-soft hover:text-primary font-mono">STM32F411</button>
+      <button data-action="quick" data-q="NE555" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-primary-soft hover:text-primary font-mono">NE555</button>
+      <button data-action="quick" data-q="TP4056" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-primary-soft hover:text-primary font-mono">TP4056</button>
+      <button data-action="quick" data-q="ADS1115" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-primary-soft hover:text-primary font-mono">ADS1115</button>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section id="results" class="scroll-mt-20 space-y-6"></section>
+
+  <!-- Catalog -->
+  <section class="scroll-mt-20" id="catalogSection">
+    <div class="flex items-end justify-between mb-3">
+      <h2 class="text-base font-semibold text-slate-900">Popular parts</h2>
+      <span id="catalogCount" class="text-xs text-slate-500 tabular-nums"></span>
+    </div>
+    <div id="catalog" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+  </section>
+</main>
+
+<footer class="border-t border-slate-200 bg-white">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-5 text-xs text-slate-500 leading-relaxed">
+    <p><strong class="font-medium text-slate-600">Disclaimer:</strong> Prices, stock, shipping fees and delivery times shown here are estimated, indexed reference values and may differ from live listings. Always verify current pricing, availability and shipping on the distributor's checkout page before buying. CircuitScout US is not affiliated with any listed retailer; store names are trademarks of their respective owners.</p>
+  </div>
+</footer>
+
+<!-- BOM drawer -->
+<div id="bomRoot">
+  <div id="bomOverlay" data-action="bom-close" class="fixed inset-0 z-40 bg-slate-900/40 opacity-0 pointer-events-none transition-opacity duration-200"></div>
+  <aside id="bomPanel" role="dialog" aria-modal="true" aria-label="Project bill of materials" aria-hidden="true"
+    class="fixed top-0 right-0 z-50 h-full w-full sm:max-w-md bg-white border-l border-slate-200 shadow-2xl flex flex-col translate-x-full transition-transform duration-200">
+    <div class="px-5 h-16 flex items-center justify-between border-b border-slate-200 shrink-0">
+      <div>
+        <h2 class="font-semibold text-slate-900">Project BOM</h2>
+        <p class="text-xs text-slate-500">Shipping is consolidated per store</p>
+      </div>
+      <button id="bomClose" data-action="bom-close" aria-label="Close BOM" class="w-9 h-9 grid place-items-center rounded-lg text-slate-500 hover:bg-slate-100">
+        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="px-5 py-3 border-b border-slate-200 shrink-0">
+      <label for="bomName" class="block text-xs font-medium text-slate-500 mb-1">Project name</label>
+      <input id="bomName" type="text" maxlength="60" value="My Project" class="w-full h-9 px-3 rounded-md border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+    </div>
+    <div id="bomBody" class="flex-1 overflow-y-auto thin-scroll px-5 py-4 space-y-4"></div>
+    <div id="bomFooter" class="border-t border-slate-200 bg-slate-50 px-5 py-4 shrink-0"></div>
+  </aside>
+</div>
+
+<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm shadow-lg opacity-0 pointer-events-none transition-opacity duration-200" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Utilities ---------- */
+  const fmt = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const r2 = n => Math.round(n * 100) / 100;
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const $ = id => document.getElementById(id);
+
+  function hash(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+  function rng(seed) {
+    let a = hash(seed);
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ---------- Data ---------- */
+  const CATS = ['All', 'Microcontrollers', 'Sensors', 'Displays', 'Motor Drivers', 'Power & Prototyping'];
+  const CAT_COLOR = { 'Microcontrollers': '#2563EB', 'Sensors': '#0D9488', 'Displays': '#7C3AED', 'Motor Drivers': '#EA580C', 'Power & Prototyping': '#CA8A04', 'Custom': '#475569' };
+
+  const CATALOG = [
+    { key: 'esp32-s3-devkitc-1', name: 'ESP32-S3 DevKitC-1', mpn: 'ESP32-S3-DEVKITC-1-N8R8', cat: 'Microcontrollers', base: 15.5, term: 'ESP32-S3-DevKitC-1', desc: 'Dual-core LX7 · Wi-Fi + BLE 5 · native USB', alias: 'esp32 espressif wifi bluetooth devkit' },
+    { key: 'arduino-uno-r4-wifi', name: 'Arduino Uno R4 WiFi', mpn: 'ABX00087', cat: 'Microcontrollers', base: 27.5, term: 'Arduino Uno R4 WiFi', desc: 'RA4M1 Cortex-M4 · ESP32-S3 Wi-Fi · LED matrix', alias: 'arduino uno r4 abx00087 renesas' },
+    { key: 'raspberry-pi-5-4gb', name: 'Raspberry Pi 5 (4GB)', mpn: 'SC1112', cat: 'Microcontrollers', base: 60, term: 'Raspberry Pi 5 4GB', desc: 'Quad-core Cortex-A76 SBC · PCIe 2.0 · 4GB RAM', alias: 'rpi pi5 sbc single board computer sc1112' },
+    { key: 'raspberry-pi-pico-w', name: 'Raspberry Pi Pico W', mpn: 'SC0918', cat: 'Microcontrollers', base: 6, term: 'Raspberry Pi Pico W', desc: 'RP2040 dual-core M0+ · 2.4 GHz Wi-Fi', alias: 'rpi rp2040 pico sc0918' },
+    { key: 'dht22-am2302', name: 'DHT22 (AM2302) Temp & Humidity Sensor', mpn: 'AM2302', cat: 'Sensors', base: 9, term: 'DHT22 AM2302', desc: '±0.5 °C · 0–100% RH · single-wire digital', alias: 'dht temperature humidity am2302' },
+    { key: 'bme280', name: 'BME280 Barometric & Humidity Sensor', mpn: 'BME280', cat: 'Sensors', base: 12.5, term: 'BME280', desc: 'Pressure + humidity + temperature · I²C/SPI', alias: 'bosch pressure altimeter humidity temperature bmp280' },
+    { key: 'mpu6050', name: 'MPU6050 6-Axis IMU Module', mpn: 'GY-521', cat: 'Sensors', base: 6.5, term: 'MPU6050', desc: '3-axis gyro + 3-axis accelerometer · I²C', alias: 'imu gy-521 gyroscope accelerometer invensense' },
+    { key: 'hc-sr04', name: 'HC-SR04 Ultrasonic Distance Sensor', mpn: 'HC-SR04', cat: 'Sensors', base: 3.5, term: 'HC-SR04', desc: '2–400 cm ranging · 5V · trigger/echo', alias: 'ultrasonic ranging sonar distance' },
+    { key: 'ssd1306-oled-096', name: '0.96" I2C OLED Display (SSD1306)', mpn: 'SSD1306 128x64', cat: 'Displays', base: 8.5, term: 'SSD1306 0.96 OLED I2C', desc: '128×64 monochrome · I²C · 3.3–5V', alias: 'oled ssd1306 128x64 screen i2c' },
+    { key: 'drv8833', name: 'DRV8833 Dual Motor Driver', mpn: 'DRV8833', cat: 'Motor Drivers', base: 4.75, term: 'DRV8833', desc: '1.2A per channel · 2.7–10.8V · dual H-bridge', alias: 'dual h-bridge motor driver texas instruments pololu' },
+    { key: 'relay-4ch-5v', name: '4-Channel 5V Relay Module', mpn: 'SRD-05VDC-SL-C ×4', cat: 'Power & Prototyping', base: 7.95, term: '4 channel 5V relay module', desc: 'Opto-isolated · 10A/250VAC contacts', alias: 'relay switch opto isolated srd-05vdc' },
+    { key: 'lm2596-buck', name: 'LM2596 DC-DC Buck Converter', mpn: 'LM2596S', cat: 'Power & Prototyping', base: 4.5, term: 'LM2596', desc: 'Adjustable step-down · 3A · 4–40V in', alias: 'buck step down regulator dc-dc voltage' },
+    { key: 'nema17-1-5a', name: 'NEMA 17 Stepper Motor (1.5A)', mpn: '17HS4401', cat: 'Motor Drivers', base: 15, term: 'NEMA 17 stepper motor', desc: '1.8°/step · 40 N·cm · bipolar 4-wire', alias: 'stepper motor nema 17hs4401 3d printer' },
+    { key: 'breadboard-830', name: '830-Point Solderless Breadboard', mpn: 'MB-102', cat: 'Power & Prototyping', base: 5.5, term: '830 point breadboard', desc: 'Full-size · two power rails · 830 tie points', alias: 'breadboard mb-102 prototyping solderless' }
+  ];
+  CATALOG.forEach(p => { p.blob = (p.name + ' ' + p.mpn + ' ' + p.alias + ' ' + p.term).toLowerCase(); p.norm = p.blob.replace(/[^a-z0-9]/g, ''); });
+
+  const VENDORS = [
+    { id: 'digikey', name: 'DigiKey', short: 'DK', color: '#C8102E', url: 'https://www.digikey.com/en/products/result?keywords=', mult: 1.0, ending: 'exact', ship: 7.99, free: 50, days: [1, 2], dayLabel: '1–2 Business Days', stockP: 0.82, bulk: { qty: 10, off: 0.07 }, note: 'Authorized distributor' },
+    { id: 'mouser', name: 'Mouser Electronics', short: 'MO', color: '#0B4F9C', url: 'https://www.mouser.com/c/?q=', mult: 1.02, ending: 'exact', ship: 7.99, free: 60, days: [1, 3], dayLabel: '1–3 Business Days', stockP: 0.80, bulk: { qty: 25, off: 0.09 }, note: 'Authorized distributor' },
+    { id: 'adafruit', name: 'Adafruit', short: 'AF', color: '#1F2937', url: 'https://www.adafruit.com/search?q=', mult: 1.12, ending: '95', ship: 5.99, free: 99, days: [2, 5], dayLabel: '2–5 Days', stockP: 0.66, bulk: { qty: 10, off: 0.10 }, note: 'New York maker store' },
+    { id: 'sparkfun', name: 'SparkFun', short: 'SF', color: '#E2231A', url: 'https://www.sparkfun.com/search/results?term=', mult: 1.10, ending: '95', ship: 6.95, free: 75, days: [2, 5], dayLabel: '2–5 Days', stockP: 0.68, bulk: { qty: 10, off: 0.08 }, note: 'Boulder, CO' },
+    { id: 'pololu', name: 'Pololu', short: 'PL', color: '#0E7490', url: 'https://www.pololu.com/search?query=', mult: 1.05, ending: '95', ship: 5.95, free: 80, days: [2, 4], dayLabel: '2–4 Days', stockP: 0.74, bulk: { qty: 10, off: 0.05 }, note: 'Las Vegas, NV' },
+    { id: 'jameco', name: 'Jameco Electronics', short: 'JM', color: '#B45309', url: 'https://www.jameco.com/shop/StoreCatalogDrillDownView?search_type=jamecoall&freeText=', mult: 1.04, ending: '95', ship: 6.95, free: 99, days: [2, 5], dayLabel: '2–5 Days', stockP: 0.72, bulk: { qty: 25, off: 0.10 }, note: 'Component specialist' },
+    { id: 'microcenter', name: 'Micro Center', short: 'MC', color: '#0369A1', url: 'https://www.microcenter.com/search/search_results.aspx?Ntt=', mult: 0.97, ending: '99', ship: 7.99, free: 99, days: [3, 5], dayLabel: '3–5 Days', stockP: 0.62, bulk: null, bulkText: 'No published qty breaks', pickup: true, note: 'In-store pickup' },
+    { id: 'amazon', name: 'Amazon.com', short: 'AZ', color: '#B7791F', url: 'https://www.amazon.com/s?k=', mult: 1.08, ending: '99', ship: 5.99, free: 35, days: [1, 3], dayLabel: '1–3 Days', stockP: 0.88, bulk: null, bulkText: 'Multi-pack listings vary', note: 'Marketplace · check seller' }
+  ];
+  const AFF = {
+    pololu: { 'Motor Drivers': 0.93 },
+    digikey: { 'Microcontrollers': 0.98, 'Power & Prototyping': 0.95 },
+    mouser: { 'Microcontrollers': 0.98, 'Power & Prototyping': 0.96 },
+    adafruit: { 'Displays': 1.03 },
+    amazon: { 'Power & Prototyping': 0.88, 'Sensors': 0.92, 'Displays': 0.93 },
+    jameco: { 'Power & Prototyping': 0.97 },
+    microcenter: { 'Microcontrollers': 0.95 }
+  };
+
+  /* ---------- Fallback estimator for custom part numbers ---------- */
+  const HINTS = {
+    'ne555': [0.69, 'Power & Prototyping'], 'lm358': [0.59, 'Power & Prototyping'], '7805': [0.79, 'Power & Prototyping'], 'lm317': [0.89, 'Power & Prototyping'],
+    '2n2222': [0.28, 'Power & Prototyping'], 'irf520': [1.25, 'Power & Prototyping'], 'tp4056': [1.95, 'Power & Prototyping'], 'ams1117': [0.85, 'Power & Prototyping'],
+    'ads1115': [9.95, 'Sensors'], 'ina219': [8.95, 'Sensors'], 'ds18b20': [3.95, 'Sensors'], 'max31855': [14.95, 'Sensors'], 'hx711': [3.95, 'Sensors'],
+    'mcp3008': [3.75, 'Sensors'], 'pca9685': [7.95, 'Motor Drivers'], 'stm32f411': [14.5, 'Microcontrollers'], 'stm32f103': [5.95, 'Microcontrollers'],
+    'atmega328': [3.95, 'Microcontrollers'], 'attiny85': [2.95, 'Microcontrollers'], 'l298n': [5.95, 'Motor Drivers'], 'a4988': [5.5, 'Motor Drivers'], 'tmc2209': [8.95, 'Motor Drivers']
+  };
+  const CAT_RULES = [
+    [/stm32|esp8266|esp32|atmega|attiny|rp2040|rp2350|pic1|nrf5|samd|teensy|arduino|raspberry|pico/, 'Microcontrollers', 3, 35],
+    [/oled|lcd|tft|ssd13|ili9|st77|epaper|e-?ink|7seg|display|neopixel matrix/, 'Displays', 4, 32],
+    [/drv8|a4988|tb66|l298|l293|tmc2|stepper|motor|l9110|pca9685|servo/, 'Motor Drivers', 2, 16],
+    [/bme|bmp|dht|mpu|adxl|ds18|sht|vl53|hcsr|hc-sr|ina2|max3|lis3|ads1|mcp3|tcs3|apds|acs7|hx711|sensor|thermistor|gyro|accel/, 'Sensors', 2, 18],
+    [/lm25|lm78|78[0-9]{2}|lm317|tp40|buck|boost|xl4|mp1584|ams1117|breadboard|relay|555|resistor|capacitor|transistor|mosfet|diode|jumper|regulator|2n[0-9]{4}|irf/, 'Power & Prototyping', 0.4, 12]
+  ];
+  function customPart(q) {
+    const clean = q.trim().replace(/\s+/g, ' ');
+    const low = clean.toLowerCase();
+    const flat = low.replace(/[^a-z0-9]/g, '');
+    const key = 'custom-' + (low.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'part');
+    const r = rng(key + '|base');
+    let base, cat = 'Custom';
+    const hk = Object.keys(HINTS).find(k => flat.includes(k));
+    if (hk) {
+      base = HINTS[hk][0] * (0.96 + r() * 0.08); cat = HINTS[hk][1];
+    } else {
+      let lo = 1.5, hi = 28;
+      for (const [re, c, a, b] of CAT_RULES) { if (re.test(low)) { cat = c; lo = a; hi = b; break; } }
+      base = lo * Math.pow(hi / lo, r());
+    }
+    base = Math.max(0.2, r2(base));
+    const name = /^[a-z0-9\-_.\/]+$/i.test(clean) ? clean.toUpperCase() : clean;
+    return { key, name, mpn: name, cat, base, term: clean, custom: true, desc: 'Custom part number · offers generated by the indexed estimator' };
+  }
+
+  /* ---------- Pricing engine ---------- */
+  function shape(p, mode) {
+    if (mode === 'exact') return r2(p);
+    if (p < 2) return Math.round(p * 20) / 20 || 0.05;
+    const n = Math.round(p);
+    return r2(n - (mode === '95' ? 0.05 : 0.01));
+  }
+  const offerCache = new Map();
+  function getOffers(part) {
+    const ck = part.key;
+    if (offerCache.has(ck)) return offerCache.get(ck);
+    const offers = VENDORS.map(v => {
+      const r = rng(part.key + '|' + v.id);
+      const aff = (AFF[v.id] || {})[part.cat] || 1;
+      const unit = shape(Math.max(part.base * v.mult * aff * (0.94 + r() * 0.14), 0.15), v.ending);
+      const sr = r();
+      const stock = sr < v.stockP ? 'In Stock' : (sr < v.stockP + (1 - v.stockP) * 0.55 ? 'Low Stock' : 'Backorder');
+      const boWeeks = 2 + Math.floor(r() * 4);
+      return { vendor: v, unit, stock, boWeeks };
+    });
+    if (offers.every(o => o.stock === 'Backorder')) offers[0].stock = 'In Stock';
+    offers.forEach(o => { o.deliv = delivery(o); });
+    offerCache.set(ck, offers);
+    return offers;
+  }
+  function delivery(o) {
+    const v = o.vendor;
+    if (o.stock === 'Backorder') return { label: 'Backorder · ' + o.boWeeks + '–' + (o.boWeeks + 2) + ' Weeks', min: o.boWeeks * 7, max: (o.boWeeks + 2) * 7 };
+    if (v.pickup) return { label: 'Same-Day Pickup', min: 0, max: 0, pickup: true, alt: 'or ships in ' + v.dayLabel };
+    return { label: v.dayLabel, min: v.days[0], max: v.days[1] };
+  }
+  function unitAt(o, qty) {
+    const b = o.vendor.bulk;
+    return b && qty >= b.qty ? shape(o.unit * (1 - b.off), o.vendor.ending) : o.unit;
+  }
+  function shipCost(v, sub, backorder) {
+    if (v.pickup && !backorder) return { fee: 0, free: true, pickup: true };
+    if (sub >= v.free) return { fee: 0, free: true };
+    return { fee: v.ship, free: false };
+  }
+  function bulkHint(o) {
+    const v = o.vendor;
+    if (!v.bulk) return v.bulkText;
+    return v.bulk.qty + '+ qty break: ' + fmt(shape(o.unit * (1 - v.bulk.off), v.ending)) + ' ea (−' + Math.round(v.bulk.off * 100) + '%)';
+  }
+  function priceSeries(part) {
+    const offers = getOffers(part).filter(o => o.stock !== 'Backorder');
+    const cur = Math.min(...offers.map(o => o.unit));
+    const r = rng(part.key + '|hist');
+    const w = [1];
+    for (let i = 1; i < 30; i++) {
+      let step = (r() - 0.5) * 0.05;
+      if (r() < 0.07) step -= 0.06;
+      if (r() < 0.05) step += 0.05;
+      w.push(Math.min(1.35, Math.max(0.78, w[i - 1] * (1 + step))));
+    }
+    const last = w[29];
+    return w.map(x => r2(cur * x / last));
+  }
+
+  /* ---------- State ---------- */
+  const state = { part: null, qty: 1, inStockOnly: false, sort: 'total', cat: 'All', bom: [], bomName: 'My Project' };
+  const BOM_KEY = 'circuitscout.bom.v1';
+  function loadBom() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(BOM_KEY) || '{}');
+      if (raw && Array.isArray(raw.items)) {
+        state.bom = raw.items.filter(it => it && it.part && typeof it.part.key === 'string' && VENDORS.some(v => v.id === it.vendorId) && Number.isFinite(Number(it.part.base)) && Number(it.part.base) > 0)
+          .map(it => ({ id: it.part.key + '@' + it.vendorId, vendorId: it.vendorId, qty: Math.min(9999, Math.max(1, Math.floor(Number(it.qty)) || 1)),
+            part: { key: String(it.part.key), name: String(it.part.name || it.part.key), mpn: String(it.part.mpn || ''), cat: String(it.part.cat || 'Custom'), base: Number(it.part.base), term: String(it.part.term || it.part.name || ''), custom: !!it.part.custom } }));
+        if (typeof raw.name === 'string') state.bomName = raw.name.slice(0, 60);
+      }
+    } catch (e) { /* storage unavailable */ }
+  }
+  function saveBom() {
+    try { localStorage.setItem(BOM_KEY, JSON.stringify({ items: state.bom, name: state.bomName })); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- Small UI helpers ---------- */
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.style.opacity = '1';
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+  }
+  function stockBadge(s) {
+    const map = { 'In Stock': ['bg-emerald-50 text-emerald-700 ring-emerald-600/20', 'bg-emerald-500'], 'Low Stock': ['bg-amber-50 text-amber-700 ring-amber-600/20', 'bg-amber-500'], 'Backorder': ['bg-rose-50 text-rose-700 ring-rose-600/20', 'bg-rose-500'] };
+    const m = map[s];
+    return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset ' + m[0] + '"><span class="w-1.5 h-1.5 rounded-full ' + m[1] + '"></span>' + s + '</span>';
+  }
+  function avatar(v, size) {
+    size = size || 'w-9 h-9';
+    return '<span class="' + size + ' shrink-0 rounded-md text-white text-[11px] font-bold grid place-items-center" style="background:' + v.color + '">' + v.short + '</span>';
+  }
+  function catChip(cat) {
+    const c = CAT_COLOR[cat] || CAT_COLOR.Custom;
+    return '<span class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600"><span class="w-2 h-2 rounded-full" style="background:' + c + '"></span>' + esc(cat) + '</span>';
+  }
+  const chipIcon = '<svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg>';
+
+  /* ---------- Pills & catalog ---------- */
+  function renderPills() {
+    $('pills').innerHTML = CATS.map(c => {
+      const on = state.cat === c;
+      return '<button type="button" data-action="cat" data-cat="' + esc(c) + '" aria-pressed="' + on + '" class="h-8 px-3.5 rounded-full text-sm font-medium border transition ' +
+        (on ? 'bg-primary border-primary text-white shadow-sm' : 'bg-white border-slate-300 text-slate-600 hover:border-primary hover:text-primary') + '">' + esc(c) + '</button>';
+    }).join('');
+  }
+  function bestInStock(part) {
+    const av = getOffers(part).filter(o => o.stock !== 'Backorder');
+    const mn = av.reduce((a, o) => (o.unit < a.unit ? o : a), av[0]);
+    return { price: mn.unit, count: av.length };
+  }
+  function renderCatalog() {
+    const list = CATALOG.filter(p => state.cat === 'All' || p.cat === state.cat);
+    $('catalogCount').textContent = list.length + ' of ' + CATALOG.length + ' parts';
+    $('catalog').innerHTML = list.map(p => {
+      const b = bestInStock(p);
+      const sel = state.part && state.part.key === p.key;
+      const c = CAT_COLOR[p.cat];
+      return '<button type="button" data-action="pick-part" data-key="' + p.key + '" class="text-left bg-white rounded-xl border p-4 flex gap-3 hover:border-primary hover:shadow-sm transition ' + (sel ? 'border-primary ring-2 ring-primary/20' : 'border-slate-200') + '">' +
+        '<span class="w-10 h-10 shrink-0 rounded-lg grid place-items-center" style="background:' + c + '1A;color:' + c + '">' + chipIcon + '</span>' +
+        '<span class="min-w-0 flex-1">' +
+          '<span class="block text-sm font-semibold text-slate-900 leading-snug">' + esc(p.name) + '</span>' +
+          '<span class="block text-xs text-slate-500 mt-0.5 font-mono truncate">' + esc(p.mpn) + '</span>' +
+          '<span class="block text-xs text-slate-500 mt-1.5 line-clamp-2">' + esc(p.desc) + '</span>' +
+          '<span class="flex items-center justify-between mt-2.5"><span class="text-sm font-semibold text-slate-900 tabular-nums">from ' + fmt(b.price) + '</span><span class="text-xs text-slate-500 tabular-nums">' + b.count + '/8 in stock</span></span>' +
+        '</span></button>';
+    }).join('');
+  }
+
+  /* ---------- Autocomplete ---------- */
+  let suggItems = [], suggActive = -1;
+  function score(p, q) {
+    const name = p.name.toLowerCase();
+    const toks = q.split(/\s+/).filter(Boolean);
+    if (!toks.every(t => p.blob.includes(t))) return 0;
+    let s = 1;
+    if (name.startsWith(q)) s += 4;
+    else if (name.split(/[\s(]/).some(w => w.startsWith(q))) s += 3;
+    else if (name.includes(q)) s += 2;
+    if (p.mpn.toLowerCase().includes(q)) s += 2;
+    return s;
+  }
+  function renderSugg() {
+    const raw = $('q').value;
+    const q = raw.trim().toLowerCase();
+    let parts;
+    if (!q) parts = CATALOG.filter(p => state.cat === 'All' || p.cat === state.cat).slice(0, 7);
+    else parts = CATALOG.filter(p => state.cat === 'All' || p.cat === state.cat).map(p => [p, score(p, q)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 7).map(x => x[0]);
+    suggItems = parts.map(p => ({ type: 'part', part: p }));
+    if (q.length >= 2) suggItems.push({ type: 'custom', q: raw.trim() });
+    suggActive = suggItems.length && q ? 0 : -1;
+    paintSugg(!q);
+  }
+  function paintSugg(popular) {
+    const ul = $('sugg');
+    if (!suggItems.length) { ul.classList.add('hidden'); $('q').setAttribute('aria-expanded', 'false'); return; }
+    let html = '';
+    if (popular) html += '<li class="px-4 pt-2 pb-1 text-[11px] uppercase tracking-wide text-slate-400 font-medium" role="presentation">Popular' + (state.cat !== 'All' ? ' · ' + esc(state.cat) : '') + '</li>';
+    suggItems.forEach((it, i) => {
+      const act = i === suggActive ? ' sugg-active' : '';
+      if (it.type === 'part') {
+        const p = it.part;
+        html += '<li role="option" id="sg' + i + '" data-idx="' + i + '" aria-selected="' + (i === suggActive) + '" class="px-4 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-slate-50' + act + '">' +
+          '<span class="w-2 h-2 rounded-full shrink-0" style="background:' + CAT_COLOR[p.cat] + '"></span>' +
+          '<span class="min-w-0 flex-1"><span class="block text-sm text-slate-900 truncate">' + esc(p.name) + '</span><span class="block text-xs text-slate-500 font-mono truncate">' + esc(p.mpn) + ' · ' + esc(p.cat) + '</span></span>' +
+          '<span class="text-xs text-slate-500 tabular-nums shrink-0">~' + fmt(p.base) + '</span></li>';
+      } else {
+        html += '<li role="option" id="sg' + i + '" data-idx="' + i + '" aria-selected="' + (i === suggActive) + '" class="px-4 py-2.5 cursor-pointer flex items-center gap-3 border-t border-slate-100 hover:bg-slate-50' + act + '">' +
+          '<span class="w-6 h-6 rounded bg-primary-soft text-primary grid place-items-center shrink-0"><svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>' +
+          '<span class="text-sm text-slate-700 min-w-0 truncate">Compare prices for custom part <strong class="font-semibold text-slate-900">“' + esc(it.q) + '”</strong></span></li>';
+      }
+    });
+    ul.innerHTML = html;
+    ul.classList.remove('hidden');
+    $('q').setAttribute('aria-expanded', 'true');
+    if (suggActive >= 0) $('q').setAttribute('aria-activedescendant', 'sg' + suggActive); else $('q').removeAttribute('aria-activedescendant');
+  }
+  function closeSugg() { $('sugg').classList.add('hidden'); $('q').setAttribute('aria-expanded', 'false'); suggActive = -1; }
+  function chooseSugg(i) {
+    const it = suggItems[i]; if (!it) return;
+    if (it.type === 'part') { $('q').value = it.part.name; setPart(it.part, true); }
+    else { const p = customPart(it.q); $('q').value = p.name; setPart(p, true); }
+    closeSugg(); syncClear();
+  }
+  function submitQuery() {
+    const raw = $('q').value.trim();
+    if (suggActive >= 0 && suggItems[suggActive] && !$('sugg').classList.contains('hidden')) { chooseSugg(suggActive); return; }
+    if (!raw) { $('q').focus(); return; }
+    const norm = raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const hit = norm.length >= 2 ? CATALOG.find(p => p.norm.includes(norm)) : null;
+    const p = hit || customPart(raw);
+    $('q').value = p.name; setPart(p, true); closeSugg(); syncClear();
+  }
+  function syncClear() { $('qClear').hidden = !$('q').value; }
+
+  /* ---------- Results ---------- */
+  function setPart(part, scroll) {
+    state.part = part;
+    try { history.replaceState(null, '', '#' + (part.custom ? 'q=' + encodeURIComponent(part.term) : 'part=' + part.key)); } catch (e) { /* ignore */ }
+    renderResults(); renderCatalog();
+    if (scroll) $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function renderResults() {
+    const p = state.part;
+    if (!p) { $('results').innerHTML = ''; return; }
+    const note = p.custom ? '<div class="mt-3 flex items-start gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"><svg viewBox="0 0 24 24" class="w-4 h-4 mt-px shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span>This part is not in the pre-loaded catalog, so offers are generated by the estimator. They are consistent for this part number but approximate. Use “View Offer” to see live prices.</span></div>' : '';
+    $('results').innerHTML =
+      '<div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6">' +
+        '<div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">' +
+          '<div class="min-w-0">' +
+            '<div class="flex flex-wrap items-center gap-x-3 gap-y-1">' + catChip(p.cat) + '<span class="text-xs text-slate-400">Part #</span><span class="text-xs font-mono text-slate-600">' + esc(p.mpn) + '</span></div>' +
+            '<h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-900">' + esc(p.name) + '</h2>' +
+            '<p class="text-sm text-slate-500 mt-0.5">' + esc(p.desc) + '</p>' +
+          '</div>' +
+          '<div class="flex flex-wrap items-end gap-3 shrink-0">' +
+            '<div><label for="qtyInput" class="block text-xs font-medium text-slate-500 mb-1">Quantity</label>' +
+              '<div class="inline-flex h-10 rounded-lg border border-slate-300 overflow-hidden bg-white">' +
+                '<button type="button" data-action="qty-dec" aria-label="Decrease quantity" class="w-9 text-slate-600 hover:bg-slate-100">−</button>' +
+                '<input id="qtyInput" type="number" inputmode="numeric" min="1" max="9999" value="' + state.qty + '" class="w-14 text-center text-sm font-medium tabular-nums border-x border-slate-300 focus:outline-none focus:bg-primary-soft">' +
+                '<button type="button" data-action="qty-inc" aria-label="Increase quantity" class="w-9 text-slate-600 hover:bg-slate-100">+</button>' +
+              '</div></div>' +
+            '<div><label for="sortSel" class="block text-xs font-medium text-slate-500 mb-1">Sort by</label>' +
+              '<select id="sortSel" class="h-10 rounded-lg border border-slate-300 bg-white text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">' +
+                [['total', 'Lowest Total Price'], ['base', 'Lowest Base Price'], ['fast', 'Fastest Delivery'], ['stock', 'In Stock First']].map(o => '<option value="' + o[0] + '"' + (state.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') +
+              '</select></div>' +
+            '<label class="h-10 inline-flex items-center gap-2.5 cursor-pointer select-none">' +
+              '<input id="stockOnly" type="checkbox" class="sr-only peer"' + (state.inStockOnly ? ' checked' : '') + '>' +
+              '<span class="relative w-10 h-6 rounded-full bg-slate-300 peer-checked:bg-primary transition peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 after:content-[\'\'] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-4"></span>' +
+              '<span class="text-sm font-medium text-slate-700">In Stock Only</span>' +
+            '</label>' +
+          '</div>' +
+        '</div>' + note +
+      '</div>' +
+      '<div id="compareBody" class="space-y-6"></div>' +
+      '<div id="historyCard" class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6"></div>';
+    renderCompare(); renderHistory();
+  }
+
+  const SORTS = {
+    total: (a, b) => a.total - b.total,
+    base: (a, b) => a.unit - b.unit || a.total - b.total,
+    fast: (a, b) => a.o.deliv.min - b.o.deliv.min || a.o.deliv.max - b.o.deliv.max || a.total - b.total,
+    stock: (a, b) => rank(a) - rank(b) || a.total - b.total
+  };
+  function rank(r) { return r.o.stock === 'In Stock' ? 0 : r.o.stock === 'Low Stock' ? 1 : 2; }
+  function computeRows() {
+    const qty = state.qty;
+    return getOffers(state.part).map(o => {
+      const unit = unitAt(o, qty), sub = r2(unit * qty), sh = shipCost(o.vendor, sub, o.stock === 'Backorder');
+      return { o, unit, sub, sh, total: r2(sub + sh.fee) };
+    });
+  }
+  function shipCell(r) {
+    const v = r.o.vendor;
+    if (r.sh.pickup) return '<div class="font-medium tabular-nums">$0.00</div><div class="text-xs text-emerald-700">Free in-store pickup</div>';
+    if (r.sh.free) return '<div class="font-medium text-emerald-700">FREE</div><div class="text-xs text-slate-500 tabular-nums">Free over $' + v.free + ' met</div>';
+    return '<div class="font-medium tabular-nums">' + fmt(r.sh.fee) + '</div><div class="text-xs text-slate-500 tabular-nums">Free over $' + v.free + '</div>';
+  }
+  function baseCell(r) {
+    const q = state.qty;
+    let h = '<div class="font-medium tabular-nums">' + fmt(r.unit) + '</div>';
+    if (q > 1) h += '<div class="text-xs text-slate-500 tabular-nums">' + q + ' × = ' + fmt(r.sub) + '</div>';
+    return h;
+  }
+  function renderCompare() {
+    const rows = computeRows();
+    const avail = rows.filter(r => r.o.stock !== 'Backorder');
+    const best = avail.length ? avail.reduce((a, r) => (r.total < a.total ? r : a), avail[0]) : null;
+    const lowBase = avail.length ? avail.reduce((a, r) => (r.unit < a.unit ? r : a), avail[0]) : null;
+    const fastest = avail.length ? avail.slice().sort(SORTS.fast)[0] : null;
+    const worst = avail.length ? Math.max(...avail.map(r => r.total)) : 0;
+    let shown = rows.slice();
+    if (state.inStockOnly) shown = shown.filter(r => r.o.stock !== 'Backorder');
+    shown.sort(SORTS[state.sort] || SORTS.total);
+
+    const tile = (label, value, sub) => '<div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm"><div class="text-xs font-medium text-slate-500">' + label + '</div><div class="mt-1 text-xl font-semibold text-slate-900 tabular-nums">' + value + '</div><div class="text-xs text-slate-500 mt-0.5 truncate">' + sub + '</div></div>';
+    const tiles = '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">' +
+      tile('Best landed price', best ? fmt(best.total) : '—', best ? esc(best.o.vendor.name) + ' · qty ' + state.qty : 'No in-stock offers') +
+      tile('Lowest base price', lowBase ? fmt(lowBase.unit) : '—', lowBase ? esc(lowBase.o.vendor.name) + ' · per unit' : '—') +
+      tile('Fastest delivery', fastest ? esc(fastest.o.deliv.label) : '—', fastest ? esc(fastest.o.vendor.name) : '—') +
+      tile('Availability', avail.length + ' of 8', 'stores with stock') + '</div>';
+
+    const link = r => r.o.vendor.url + encodeURIComponent(state.part.term);
+    let table = '';
+    if (!shown.length) {
+      table = '<div class="p-8 text-center text-sm text-slate-500">No in-stock offers match. Turn off “In Stock Only” to see backordered listings.</div>';
+    } else {
+      const trs = shown.map(r => {
+        const v = r.o.vendor, isBest = best && r === best;
+        return '<tr class="border-t border-slate-200 align-top ' + (isBest ? 'bg-primary-soft/60' : '') + '">' +
+          '<td class="px-4 py-3"><div class="flex items-center gap-3">' + avatar(v) + '<div class="min-w-0"><div class="font-medium text-slate-900">' + esc(v.name) + '</div><div class="text-xs text-slate-500">' + esc(v.note) + '</div>' +
+          (isBest ? '<span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary text-white text-[11px] font-semibold tracking-wide">Best Price</span>' : '') + '</div></div></td>' +
+          '<td class="px-4 py-3 text-right">' + baseCell(r) + '</td>' +
+          '<td class="px-4 py-3 text-right">' + shipCell(r) + '</td>' +
+          '<td class="px-4 py-3 text-right"><div class="text-base font-semibold tabular-nums ' + (isBest ? 'text-primary' : 'text-slate-900') + '">' + fmt(r.total) + '</div></td>' +
+          '<td class="px-4 py-3">' + stockBadge(r.o.stock) + '</td>' +
+          '<td class="px-4 py-3 text-slate-700"><div>' + esc(r.o.deliv.label) + '</div>' + (r.o.deliv.alt ? '<div class="text-xs text-slate-500">' + esc(r.o.deliv.alt) + '</div>' : '') + '</td>' +
+          '<td class="px-4 py-3 text-xs text-slate-600 tabular-nums max-w-[180px]">' + esc(bulkHint(r.o)) + '</td>' +
+          '<td class="px-4 py-3"><div class="flex flex-col gap-1.5 items-stretch w-28">' +
+            '<a href="' + esc(link(r)) + '" target="_blank" rel="noopener noreferrer" class="h-8 px-3 rounded-md bg-primary hover:bg-primary-dark text-white text-xs font-medium grid place-items-center transition">View Offer ↗</a>' +
+            '<button type="button" data-action="add-bom" data-vendor="' + v.id + '" class="h-8 px-3 rounded-md border border-slate-300 text-slate-700 hover:border-primary hover:text-primary text-xs font-medium transition">+ Add to BOM</button></div></td></tr>';
+      }).join('');
+      const cards = shown.map(r => {
+        const v = r.o.vendor, isBest = best && r === best;
+        return '<div class="p-4 border-t border-slate-200 first:border-t-0 ' + (isBest ? 'bg-primary-soft/60' : '') + '">' +
+          '<div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3 min-w-0">' + avatar(v) + '<div class="min-w-0"><div class="font-medium text-slate-900">' + esc(v.name) + '</div>' +
+          (isBest ? '<span class="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-primary text-white text-[11px] font-semibold tracking-wide">Best Price</span>' : '<div class="text-xs text-slate-500">' + esc(v.note) + '</div>') + '</div></div>' + stockBadge(r.o.stock) + '</div>' +
+          '<div class="grid grid-cols-3 gap-3 mt-3 text-sm"><div><div class="text-xs text-slate-500">Base</div>' + baseCell(r) + '</div><div><div class="text-xs text-slate-500">Shipping</div>' + shipCell(r) + '</div><div><div class="text-xs text-slate-500">Total</div><div class="text-base font-semibold tabular-nums ' + (isBest ? 'text-primary' : 'text-slate-900') + '">' + fmt(r.total) + '</div></div></div>' +
+          '<div class="mt-2.5 text-xs text-slate-600"><span class="font-medium text-slate-700">' + esc(r.o.deliv.label) + '</span> · <span class="tabular-nums">' + esc(bulkHint(r.o)) + '</span></div>' +
+          '<div class="grid grid-cols-2 gap-2 mt-3"><a href="' + esc(link(r)) + '" target="_blank" rel="noopener noreferrer" class="h-9 rounded-md bg-primary text-white text-sm font-medium grid place-items-center">View Offer ↗</a>' +
+          '<button type="button" data-action="add-bom" data-vendor="' + v.id + '" class="h-9 rounded-md border border-slate-300 text-slate-700 text-sm font-medium">+ Add to BOM</button></div></div>';
+      }).join('');
+      table =
+        '<div class="hidden md:block overflow-x-auto thin-scroll"><table class="w-full text-sm min-w-[980px]"><thead><tr class="text-left text-xs uppercase tracking-wide text-slate-500 bg-slate-50">' +
+        '<th class="px-4 py-3 font-medium">Store</th><th class="px-4 py-3 font-medium text-right">Base Price</th><th class="px-4 py-3 font-medium text-right">Shipping</th><th class="px-4 py-3 font-medium text-right">Total Landed</th><th class="px-4 py-3 font-medium">Stock</th><th class="px-4 py-3 font-medium">Delivery</th><th class="px-4 py-3 font-medium">Bulk Pricing</th><th class="px-4 py-3 font-medium"><span class="sr-only">Actions</span></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
+        '<div class="md:hidden">' + cards + '</div>';
+    }
+    const spread = best && worst > best.total ? '<div class="px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs text-slate-600 tabular-nums">Choosing the best in-stock offer saves up to <strong class="text-slate-900">' + fmt(worst - best.total) + '</strong> (' + Math.round((worst - best.total) / worst * 100) + '%) versus the priciest in-stock store at quantity ' + state.qty + '.</div>' : '';
+    $('compareBody').innerHTML = tiles + '<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">' + table + spread + '</div>';
+  }
+
+  /* ---------- Price history sparkline ---------- */
+  let hist = null;
+  function renderHistory() {
+    const series = priceSeries(state.part);
+    const today = new Date();
+    const dates = series.map((_, i) => { const d = new Date(today); d.setDate(today.getDate() - (29 - i)); return d; });
+    const dl = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const lo = Math.min(...series), hi = Math.max(...series), avg = r2(series.reduce((a, b) => a + b, 0) / series.length), cur = series[29];
+    const diff = avg ? (cur - avg) / avg * 100 : 0;
+    const W = 640, H = 210, pl = 52, pr = 16, pt = 16, pb = 30;
+    const pad = (hi - lo) * 0.18 || Math.max(0.05, cur * 0.05);
+    const yl = lo - pad, yh = hi + pad;
+    const x = i => pl + i * (W - pl - pr) / 29;
+    const y = v => pt + (yh - v) / (yh - yl) * (H - pt - pb);
+    const pts = series.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1));
+    const area = 'M' + x(0).toFixed(1) + ',' + (H - pb) + ' L' + pts.join(' L') + ' L' + x(29).toFixed(1) + ',' + (H - pb) + ' Z';
+    const grid = [0, 0.5, 1].map(t => { const v = yl + (yh - yl) * t, yy = y(v); return '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '" stroke="#E2E8F0" stroke-width="1"/><text x="' + (pl - 8) + '" y="' + (yy + 4).toFixed(1) + '" text-anchor="end" font-size="11" fill="#64748B" style="font-variant-numeric:tabular-nums">' + fmt(v) + '</text>'; }).join('');
+    const minI = series.indexOf(lo);
+    const avgY = y(avg).toFixed(1);
+    const svg =
+      '<svg id="spSvg" viewBox="0 0 ' + W + ' ' + H + '" class="w-full h-auto select-none touch-pan-y" role="img" aria-label="30-day price trend. Low ' + fmt(lo) + ', average ' + fmt(avg) + ', current ' + fmt(cur) + '">' +
+      '<defs><linearGradient id="spFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563EB" stop-opacity="0.22"/><stop offset="1" stop-color="#2563EB" stop-opacity="0"/></linearGradient></defs>' +
+      grid +
+      '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + avgY + '" y2="' + avgY + '" stroke="#94A3B8" stroke-dasharray="4 4"/>' +
+      '<text x="' + (W - pr) + '" y="' + (Number(avgY) - 5) + '" text-anchor="end" font-size="10.5" fill="#64748B">30-day avg</text>' +
+      '<path d="' + area + '" fill="url(#spFill)"/>' +
+      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#2563EB" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + x(minI).toFixed(1) + '" cy="' + y(lo).toFixed(1) + '" r="4.5" fill="#10B981" stroke="white" stroke-width="2"/>' +
+      '<circle cx="' + x(29).toFixed(1) + '" cy="' + y(cur).toFixed(1) + '" r="5" fill="#2563EB" stroke="white" stroke-width="2"/>' +
+      '<text x="' + pl + '" y="' + (H - 8) + '" font-size="11" fill="#64748B">' + dl(dates[0]) + '</text>' +
+      '<text x="' + x(14.5).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#64748B">' + dl(dates[14]) + '</text>' +
+      '<text x="' + (W - pr) + '" y="' + (H - 8) + '" text-anchor="end" font-size="11" fill="#64748B">Today</text>' +
+      '<g id="spHover" style="display:none"><line id="spLine" y1="' + pt + '" y2="' + (H - pb) + '" stroke="#2563EB" stroke-opacity="0.35"/><circle id="spDot" r="4.5" fill="white" stroke="#2563EB" stroke-width="2.25"/></g>' +
+      '</svg>';
+    const stat = (label, val, sub, cls) => '<div class="rounded-lg border border-slate-200 p-3"><div class="text-xs text-slate-500">' + label + '</div><div class="text-lg font-semibold tabular-nums ' + (cls || 'text-slate-900') + '">' + val + '</div><div class="text-xs text-slate-500 tabular-nums">' + sub + '</div></div>';
+    $('historyCard').innerHTML =
+      '<div class="flex flex-wrap items-center justify-between gap-2 mb-4"><div><h3 class="font-semibold text-slate-900">30-day price history</h3><p class="text-xs text-slate-500">Best in-stock base price per unit across all 8 stores</p></div>' +
+      '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium tabular-nums ' + (diff <= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700') + '">' + (diff <= 0 ? '▼ ' : '▲ ') + Math.abs(diff).toFixed(1) + '% vs 30-day avg</span></div>' +
+      '<div class="grid lg:grid-cols-[1fr_220px] gap-5"><div class="relative" id="spWrap">' + svg + '<div id="spTip" class="pointer-events-none absolute hidden -translate-x-1/2 -translate-y-full px-2.5 py-1.5 rounded-md bg-slate-900 text-white text-xs shadow-lg whitespace-nowrap tabular-nums"></div></div>' +
+      '<div class="grid grid-cols-3 lg:grid-cols-1 gap-3 content-start">' +
+        stat('30-day low', fmt(lo), dl(dates[minI]), 'text-emerald-700') + stat('30-day average', fmt(avg), 'mean of 30 days') + stat('Current best', fmt(cur), 'today', 'text-primary') + '</div></div>' +
+      '<p class="mt-3 text-xs text-slate-400">Trend is an indexed reference series, not live market data.</p>';
+    hist = { series, dates, x, y, W, pl, pr, dl };
+    const svgEl = $('spSvg');
+    const move = ev => {
+      const rect = svgEl.getBoundingClientRect();
+      const t = ev.touches ? ev.touches[0] : ev;
+      const px = (t.clientX - rect.left) * (hist.W / rect.width);
+      let i = Math.round((px - hist.pl) / ((hist.W - hist.pl - hist.pr) / 29));
+      i = Math.max(0, Math.min(29, i));
+      const cx = hist.x(i), cy = hist.y(hist.series[i]);
+      $('spHover').style.display = '';
+      $('spLine').setAttribute('x1', cx); $('spLine').setAttribute('x2', cx);
+      $('spDot').setAttribute('cx', cx); $('spDot').setAttribute('cy', cy);
+      const tip = $('spTip');
+      tip.innerHTML = '<span class="text-slate-300">' + hist.dl(hist.dates[i]) + '</span> &nbsp;<strong>' + fmt(hist.series[i]) + '</strong>';
+      tip.style.left = (cx / hist.W * 100) + '%'; tip.style.top = ((cy - 10) / H * 100) + '%';
+      tip.classList.remove('hidden');
+    };
+    const leave = () => { $('spHover').style.display = 'none'; $('spTip').classList.add('hidden'); };
+    svgEl.addEventListener('mousemove', move); svgEl.addEventListener('touchmove', move, { passive: true }); svgEl.addEventListener('touchstart', move, { passive: true });
+    svgEl.addEventListener('mouseleave', leave); svgEl.addEventListener('touchend', leave);
+  }
+
+  /* ---------- BOM ---------- */
+  function addToBom(vendorId) {
+    const p = state.part; if (!p) return;
+    const id = p.key + '@' + vendorId;
+    const ex = state.bom.find(i => i.id === id);
+    if (ex) ex.qty = Math.min(9999, ex.qty + state.qty);
+    else state.bom.push({ id, vendorId, qty: state.qty, part: { key: p.key, name: p.name, mpn: p.mpn, cat: p.cat, base: p.base, term: p.term, custom: !!p.custom } });
+    saveBom(); renderBom();
+    const v = VENDORS.find(x => x.id === vendorId);
+    toast('Added ' + state.qty + ' × ' + p.name + ' from ' + v.name);
+  }
+  function bomCalc() {
+    const groups = new Map(); let sepShip = 0;
+    state.bom.forEach(it => {
+      const o = getOffers(it.part).find(x => x.vendor.id === it.vendorId); if (!o) return;
+      const unit = unitAt(o, it.qty), line = r2(unit * it.qty), bo = o.stock === 'Backorder';
+      let g = groups.get(it.vendorId);
+      if (!g) { g = { vendor: o.vendor, items: [], sub: 0, bo: false }; groups.set(it.vendorId, g); }
+      g.items.push({ it, o, unit, line, bo });
+      g.sub = r2(g.sub + line); g.bo = g.bo || bo;
+      sepShip += shipCost(o.vendor, line, bo).fee;
+    });
+    let parts = 0, ship = 0;
+    groups.forEach(g => { g.ship = shipCost(g.vendor, g.sub, g.bo); g.total = r2(g.sub + g.ship.fee); parts += g.sub; ship += g.ship.fee; });
+    return { groups: [...groups.values()], parts: r2(parts), ship: r2(ship), total: r2(parts + ship), saved: Math.max(0, r2(sepShip - ship)) };
+  }
+  function renderBom() {
+    const n = state.bom.reduce((a, i) => a + i.qty, 0);
+    $('bomCount').textContent = n > 999 ? '999+' : n;
+    $('bomCount').className = 'min-w-[1.5rem] h-6 px-1.5 rounded-full text-xs font-semibold grid place-items-center tabular-nums ' + (n ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600');
+    const c = bomCalc();
+    if (!state.bom.length) {
+      $('bomBody').innerHTML = '<div class="text-center py-14 px-4"><div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 grid place-items-center mx-auto"><svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></div><p class="mt-3 text-sm font-medium text-slate-700">Your BOM is empty</p><p class="mt-1 text-xs text-slate-500">Use “Add to BOM” on any store offer. Items from the same store share one shipping charge.</p></div>';
+      $('bomFooter').innerHTML = '<button type="button" disabled class="w-full h-10 rounded-lg bg-slate-200 text-slate-400 text-sm font-medium cursor-not-allowed">Export CSV</button>';
+      return;
+    }
+    $('bomBody').innerHTML = c.groups.map(g => {
+      const v = g.vendor;
+      const items = g.items.map(x => {
+        const it = x.it;
+        return '<li class="py-3 first:pt-0"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-sm font-medium text-slate-900 leading-snug">' + esc(it.part.name) + '</div>' +
+          '<div class="text-xs text-slate-500 mt-0.5 tabular-nums"><span class="font-mono">' + esc(it.part.mpn) + '</span> · ' + fmt(x.unit) + ' ea' + (v.bulk && it.qty >= v.bulk.qty ? ' <span class="text-emerald-700">(qty break)</span>' : '') + '</div>' +
+          (x.bo ? '<div class="mt-1">' + stockBadge('Backorder') + '</div>' : '') + '</div>' +
+          '<button type="button" data-action="bom-del" data-id="' + esc(it.id) + '" aria-label="Remove ' + esc(it.part.name) + '" class="w-7 h-7 shrink-0 grid place-items-center rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"><svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+          '<div class="flex items-center justify-between mt-2"><div class="inline-flex h-8 rounded-md border border-slate-300 overflow-hidden bg-white">' +
+          '<button type="button" data-action="bom-dec" data-id="' + esc(it.id) + '" aria-label="Decrease quantity" class="w-8 text-slate-600 hover:bg-slate-100">−</button>' +
+          '<input type="number" min="1" max="9999" value="' + it.qty + '" data-id="' + esc(it.id) + '" aria-label="Quantity" class="bom-qty w-12 text-center text-sm tabular-nums border-x border-slate-300 focus:outline-none focus:bg-primary-soft">' +
+          '<button type="button" data-action="bom-inc" data-id="' + esc(it.id) + '" aria-label="Increase quantity" class="w-8 text-slate-600 hover:bg-slate-100">+</button></div>' +
+          '<div class="text-sm font-semibold tabular-nums">' + fmt(x.line) + '</div></div></li>';
+      }).join('');
+      let shipLine;
+      if (g.ship.pickup) shipLine = '<span class="text-emerald-700">Free in-store pickup</span>';
+      else if (g.ship.free) shipLine = '<span class="text-emerald-700">FREE</span>';
+      else shipLine = '<span class="tabular-nums">' + fmt(g.ship.fee) + '</span>';
+      const hint = (!g.ship.free && !g.ship.pickup) ? '<div class="text-xs text-primary mt-1 tabular-nums">Add ' + fmt(r2(v.free - g.sub)) + ' more for free shipping</div>' : '';
+      return '<div class="border border-slate-200 rounded-lg overflow-hidden"><div class="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 border-b border-slate-200">' + avatar(v, 'w-7 h-7') + '<span class="text-sm font-semibold text-slate-900">' + esc(v.name) + '</span><span class="ml-auto text-xs text-slate-500 tabular-nums">' + g.items.length + (g.items.length === 1 ? ' line' : ' lines') + '</span></div>' +
+        '<ul class="px-3 py-3 divide-y divide-slate-100">' + items + '</ul>' +
+        '<div class="px-3 py-2.5 border-t border-slate-200 text-sm"><div class="flex justify-between text-slate-600"><span>Subtotal</span><span class="tabular-nums">' + fmt(g.sub) + '</span></div><div class="flex justify-between text-slate-600 mt-0.5"><span>Shipping (once per store)</span>' + shipLine + '</div>' + hint + '</div></div>';
+    }).join('');
+    $('bomFooter').innerHTML =
+      '<dl class="text-sm space-y-1 tabular-nums"><div class="flex justify-between text-slate-600"><dt>Parts subtotal</dt><dd>' + fmt(c.parts) + '</dd></div>' +
+      '<div class="flex justify-between text-slate-600"><dt>Shipping (consolidated)</dt><dd>' + fmt(c.ship) + '</dd></div>' +
+      '<div class="flex justify-between text-base font-semibold text-slate-900 pt-1.5 border-t border-slate-200 mt-1.5"><dt>Grand total</dt><dd>' + fmt(c.total) + '</dd></div></dl>' +
+      (c.saved > 0 ? '<div class="mt-2 text-xs text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1.5 tabular-nums">Consolidating by store saves ' + fmt(c.saved) + ' in shipping vs. ordering each part separately.</div>' : '') +
+      '<div class="grid grid-cols-[1fr_auto] gap-2 mt-3"><button type="button" data-action="bom-export" class="h-10 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-medium transition">Export CSV</button>' +
+      '<button type="button" data-action="bom-clear" class="h-10 px-4 rounded-lg border border-slate-300 text-slate-700 hover:border-rose-400 hover:text-rose-600 text-sm font-medium transition">Clear</button></div>';
+  }
+  function setBomQty(id, qty) {
+    const it = state.bom.find(i => i.id === id); if (!it) return;
+    it.qty = Math.min(9999, Math.max(1, Math.floor(qty) || 1));
+    saveBom(); renderBom();
+  }
+  function csvText(v) { let s = String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; }
+  function exportCsv() {
+    const c = bomCalc(); if (!c.groups.length) return;
+    const name = (state.bomName || 'My Project').trim() || 'My Project';
+    const L = [];
+    L.push(['Project', csvText(name)].join(','));
+    L.push(['Generated', csvText(new Date().toISOString().slice(0, 10))].join(','));
+    L.push('Note,"Prices are estimated indexed references. Verify live pricing and stock at checkout."');
+    L.push('');
+    L.push(['Store', 'Part', 'Part # / Search Term', 'Qty', 'Unit Price (USD)', 'Line Total (USD)', 'Stock', 'Store Search URL'].map(csvText).join(','));
+    c.groups.forEach(g => {
+      g.items.forEach(x => {
+        L.push([csvText(g.vendor.name), csvText(x.it.part.name), csvText(x.it.part.mpn), x.it.qty, x.unit.toFixed(2), x.line.toFixed(2), csvText(x.o.stock), csvText(g.vendor.url + encodeURIComponent(x.it.part.term))].join(','));
+      });
+      L.push([csvText(g.vendor.name), csvText('Shipping (consolidated)'), '""', '', '', g.ship.fee.toFixed(2), '""', '""'].join(','));
+    });
+    L.push('');
+    L.push(['""', csvText('Parts subtotal'), '""', '', '', c.parts.toFixed(2)].join(','));
+    L.push(['""', csvText('Shipping total'), '""', '', '', c.ship.toFixed(2)].join(','));
+    L.push(['""', csvText('Grand total'), '""', '', '', c.total.toFixed(2)].join(','));
+    const blob = new Blob(['\uFEFF' + L.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'project';
+    a.href = URL.createObjectURL(blob); a.download = slug + '-bom.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('BOM exported as ' + a.download);
+  }
+  let lastFocus = null;
+  function openBom() {
+    lastFocus = document.activeElement;
+    document.body.classList.add('drawer-open', 'overflow-hidden');
+    $('bomPanel').setAttribute('aria-hidden', 'false');
+    $('bomName').value = state.bomName;
+    renderBom();
+    setTimeout(() => $('bomClose').focus(), 50);
+  }
+  function closeBom() {
+    document.body.classList.remove('drawer-open', 'overflow-hidden');
+    $('bomPanel').setAttribute('aria-hidden', 'true');
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  /* ---------- Events ---------- */
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-action]');
+    if (!t) { if (!e.target.closest('#searchWrap')) closeSugg(); return; }
+    const a = t.dataset.action;
+    switch (a) {
+      case 'pick-part': { const p = CATALOG.find(x => x.key === t.dataset.key); if (p) { $('q').value = p.name; syncClear(); setPart(p, true); } break; }
+      case 'quick': { const p = customPart(t.dataset.q); $('q').value = p.name; syncClear(); setPart(p, true); break; }
+      case 'cat': state.cat = t.dataset.cat; renderPills(); renderCatalog(); if (!$('sugg').classList.contains('hidden')) renderSugg(); break;
+      case 'qty-inc': setQty(state.qty + 1, true); break;
+      case 'qty-dec': setQty(state.qty - 1, true); break;
+      case 'add-bom': addToBom(t.dataset.vendor); break;
+      case 'bom-open': openBom(); break;
+      case 'bom-close': closeBom(); break;
+      case 'bom-inc': { const it = state.bom.find(i => i.id === t.dataset.id); if (it) setBomQty(it.id, it.qty + 1); break; }
+      case 'bom-dec': { const it = state.bom.find(i => i.id === t.dataset.id); if (it) setBomQty(it.id, it.qty - 1); break; }
+      case 'bom-del': state.bom = state.bom.filter(i => i.id !== t.dataset.id); saveBom(); renderBom(); break;
+      case 'bom-clear': if (state.bom.length && confirm('Remove all items from this BOM?')) { state.bom = []; saveBom(); renderBom(); } break;
+      case 'bom-export': exportCsv(); break;
+    }
+  });
+  function setQty(n, syncInput) {
+    state.qty = Math.min(9999, Math.max(1, Math.floor(n) || 1));
+    if (syncInput && $('qtyInput')) $('qtyInput').value = state.qty;
+    if (state.part) renderCompare();
+  }
+  document.addEventListener('input', e => {
+    if (e.target.id === 'qtyInput') { const v = parseInt(e.target.value, 10); if (v >= 1) setQty(v, false); }
+    if (e.target.id === 'bomName') { state.bomName = e.target.value.slice(0, 60); saveBom(); }
+  });
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.id === 'qtyInput') setQty(parseInt(t.value, 10), true);
+    else if (t.id === 'sortSel') { state.sort = t.value; renderCompare(); }
+    else if (t.id === 'stockOnly') { state.inStockOnly = t.checked; renderCompare(); }
+    else if (t.classList && t.classList.contains('bom-qty')) setBomQty(t.dataset.id, parseInt(t.value, 10));
+  });
+
+  const qEl = $('q');
+  qEl.addEventListener('input', () => { syncClear(); renderSugg(); });
+  qEl.addEventListener('focus', () => { renderSugg(); });
+  qEl.addEventListener('keydown', e => {
+    const open = !$('sugg').classList.contains('hidden');
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!open) { renderSugg(); return; } suggActive = (suggActive + 1) % suggItems.length; paintSugg(!qEl.value.trim()); scrollActive(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (!open) return; suggActive = (suggActive - 1 + suggItems.length) % suggItems.length; paintSugg(!qEl.value.trim()); scrollActive(); }
+    else if (e.key === 'Enter') { e.preventDefault(); submitQuery(); }
+    else if (e.key === 'Escape') { closeSugg(); }
+  });
+  function scrollActive() { const el = $('sg' + suggActive); if (el) el.scrollIntoView({ block: 'nearest' }); }
+  $('sugg').addEventListener('mousedown', e => { e.preventDefault(); const li = e.target.closest('li[data-idx]'); if (li) chooseSugg(Number(li.dataset.idx)); });
+  $('qGo').addEventListener('click', submitQuery);
+  $('qClear').addEventListener('click', () => { qEl.value = ''; syncClear(); qEl.focus(); renderSugg(); });
+  $('homeLink').addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.body.classList.contains('drawer-open')) closeBom();
+    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); qEl.focus(); }
+  });
+
+  /* ---------- Init ---------- */
+  function init() {
+    loadBom();
+    renderPills();
+    let part = null;
+    const h = (location.hash || '').replace(/^#/, '');
+    try {
+      if (h.startsWith('part=')) part = CATALOG.find(p => p.key === decodeURIComponent(h.slice(5))) || null;
+      else if (h.startsWith('q=')) { const q = decodeURIComponent(h.slice(2)).slice(0, 60); if (q.trim().length >= 2) part = customPart(q); }
+    } catch (e) { part = null; }
+    if (!part) part = CATALOG[0];
+    qEl.value = part.name; syncClear();
+    state.part = part;
+    renderResults(); renderCatalog(); renderBom();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
